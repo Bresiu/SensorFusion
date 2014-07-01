@@ -1,24 +1,18 @@
 public class SensorSingleData {
-    // Generation,Timestamp,AX,AY,AZ,lAX,lAY,lAZ,
+    // Generation,Timestamp,AX,AY,AZ
 
     private int generation; // Measurement nunber
     private long timestamp; // Timestamp in millis, where first measurement = 0
-    private double aX;      // X axle - raw data
-    private double aY;      // Y axle - raw data
-    private double aZ;      // Z axle - raw data
-    private double laX;     // X axle - fused data
-    private double laY;     // Y axle - fused data
-    private double laZ;     // Z axle - fused data
+    private double aX;      // X axle
+    private double aY;      // Y axle
+    private double aZ;      // Z axle
 
-    public SensorSingleData(int generation, long timestamp, double aX, double aY, double aZ, double laX, double laY, double laZ) {
+    public SensorSingleData(int generation, long timestamp, double aX, double aY, double aZ) {
         this.generation = generation;
         this.timestamp = timestamp;
         this.aX = aX;
         this.aY = aY;
         this.aZ = aZ;
-        this.laX = laX;
-        this.laY = laY;
-        this.laZ = laZ;
     }
 
     public int getGeneration() {
@@ -41,20 +35,28 @@ public class SensorSingleData {
         return aZ;
     }
 
-    public double getLaX() {
-        return laX;
+    public void setGeneration(int generation) {
+        this.generation = generation;
     }
 
-    public double getLaY() {
-        return laY;
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
     }
 
-    public double getLaZ() {
-        return laZ;
+    public void setaX(double aX) {
+        this.aX = aX;
+    }
+
+    public void setaY(double aY) {
+        this.aY = aY;
+    }
+
+    public void setaZ(double aZ) {
+        this.aZ = aZ;
     }
 
     @Override
     public String toString() {
-        return generation + " " + timestamp + " " + aX + " " + aY + " " + aZ + " " + laX + " " + laY + " " + laZ;
+        return generation + " " + timestamp + " " + aX + " " + aY + " " + aZ;
     }
 }

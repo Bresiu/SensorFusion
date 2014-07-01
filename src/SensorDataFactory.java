@@ -35,12 +35,11 @@ public class SensorDataFactory {
         thread.start();
     }
 
-    // Generation, Timestamp, AX, AY, AZ, lAX, lAY, lAZ
+    // Generation, Timestamp, AX, AY, AZ
     private SensorSingleData proccessLine(String sensorLine) {
         String[] sensorParts = sensorLine.split(" ");
         return new SensorSingleData(Integer.valueOf(sensorParts[0]), Long.valueOf(sensorParts[1]),
-                Double.valueOf(sensorParts[2]), Double.valueOf(sensorParts[3]), Double.valueOf(sensorParts[4]),
-                Double.valueOf(sensorParts[5]), Double.valueOf(sensorParts[6]), Double.valueOf(sensorParts[7]));
+                Double.valueOf(sensorParts[2]), Double.valueOf(sensorParts[3]), Double.valueOf(sensorParts[4]));
     }
 
     private void pauseThread(long sleepTime) {
