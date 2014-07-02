@@ -1,62 +1,129 @@
 public class SensorSingleData {
-    // Generation,Timestamp,AX,AY,AZ
 
-    private int generation; // Measurement nunber
+    private int generation; // Measurement number
     private long timestamp; // Timestamp in millis, where first measurement = 0
-    private double aX;      // X axle
-    private double aY;      // Y axle
-    private double aZ;      // Z axle
 
-    public SensorSingleData(int generation, long timestamp, double aX, double aY, double aZ) {
+    // Accelerometer
+    private float accX;
+    private float accY;
+    private float accZ;
+
+    // Gyroscope
+    private float gyroX;
+    private float gyroY;
+    private float gyroZ;
+
+    // Magnetometer
+    private float magnX;
+    private float magnY;
+    private float magnZ;
+
+    public SensorSingleData(int generation, long timestamp, float accX, float accY, float accZ,
+                            float gyroX, float gyroY, float gyroZ, float magnX, float magnY, float magnZ) {
         this.generation = generation;
         this.timestamp = timestamp;
-        this.aX = aX;
-        this.aY = aY;
-        this.aZ = aZ;
+        this.accX = accX;
+        this.accY = accY;
+        this.accZ = accZ;
+        this.gyroX = gyroX;
+        this.gyroY = gyroY;
+        this.gyroZ = gyroZ;
+        this.magnX = magnX;
+        this.magnY = magnY;
+        this.magnZ = magnZ;
     }
 
     public int getGeneration() {
         return generation;
     }
 
-    public long getTimestamp() {
-        return timestamp;
-    }
-
-    public double getaX() {
-        return aX;
-    }
-
-    public double getaY() {
-        return aY;
-    }
-
-    public double getaZ() {
-        return aZ;
-    }
-
     public void setGeneration(int generation) {
         this.generation = generation;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
     }
 
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
 
-    public void setaX(double aX) {
-        this.aX = aX;
+    public float getAccX() {
+        return accX;
     }
 
-    public void setaY(double aY) {
-        this.aY = aY;
+    public void setAccX(float accX) {
+        this.accX = accX;
     }
 
-    public void setaZ(double aZ) {
-        this.aZ = aZ;
+    public float getAccY() {
+        return accY;
+    }
+
+    public void setAccY(float accY) {
+        this.accY = accY;
+    }
+
+    public float getAccZ() {
+        return accZ;
+    }
+
+    public void setAccZ(float accZ) {
+        this.accZ = accZ;
+    }
+
+    public float getGyroX() {
+        return gyroX;
+    }
+
+    public void setGyroX(float gyroX) {
+        this.gyroX = gyroX;
+    }
+
+    public float getGyroY() {
+        return gyroY;
+    }
+
+    public void setGyroY(float gyroY) {
+        this.gyroY = gyroY;
+    }
+
+    public float getGyroZ() {
+        return gyroZ;
+    }
+
+    public void setGyroZ(float gyroZ) {
+        this.gyroZ = gyroZ;
+    }
+
+    public float getMagnX() {
+        return magnX;
+    }
+
+    public void setMagnX(float magnX) {
+        this.magnX = magnX;
+    }
+
+    public float getMagnY() {
+        return magnY;
+    }
+
+    public void setMagnY(float magnY) {
+        this.magnY = magnY;
+    }
+
+    public float getMagnZ() {
+        return magnZ;
+    }
+
+    public void setMagnZ(float magnZ) {
+        this.magnZ = magnZ;
     }
 
     @Override
     public String toString() {
-        return generation + " " + timestamp + " " + aX + " " + aY + " " + aZ;
+        return generation + " " + timestamp + " " + accX + " " + accY + " " + accZ +
+                gyroX + " " + gyroY + " " + gyroZ + " " + magnX + " " + magnY + " " + magnZ;
     }
 }

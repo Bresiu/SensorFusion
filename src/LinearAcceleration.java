@@ -44,56 +44,25 @@ public class LinearAcceleration {
     public static final float EPSILON = 0.000000001f;
     private static final float NS2S = 1.0f / 1000000000.0f;
 
-    // list to keep track of the observers
-    // private ArrayList<LinearAccelerationSensorObserver> observersAngularVelocity;
     private boolean hasOrientation = false;
 
-    // The gravity components of the acceleration signal.
-    private float[] components = new float[3];
-
-    private float[] linearAcceleration = new float[]
-            {0, 0, 0};
-
-    private float[] gravity = new float[]
-            {0, 0, 0};
-
-    // angular speeds from gyro
-    private float[] gyroscope = new float[3];
-
-    // rotation matrix from gyro data
-    private float[] gyroMatrix = new float[9];
-
-    // orientation angles from gyro matrix
-    private float[] gyroOrientation = new float[3];
-
-    // magnetic field vector
-    private float[] magnetic = new float[3];
-
-    // accelerometer vector
-    private float[] acceleration = new float[3];
-
-    // orientation angles from accel and magnet
-    private float[] orientation = new float[3];
-
-    // final orientation angles from sensor fusion
-    private float[] fusedOrientation = new float[3];
-
-    // accelerometer and magnetometer based rotation matrix
-    private float[] rotationMatrix = new float[9];
-
+    private float[] components = new float[3]; // The gravity components of the acceleration signal.
+    private float[] linearAcceleration = new float[]{0, 0, 0};
+    private float[] gravity = new float[]{0, 0, 0};
+    private float[] gyroscope = new float[3]; // angular speeds from gyro
+    private float[] gyroMatrix = new float[9]; // rotation matrix from gyro data
+    private float[] gyroOrientation = new float[3]; // orientation angles from gyro matrix
+    private float[] magnetic = new float[3]; // magnetic field vector
+    private float[] acceleration = new float[3]; // accelerometer vector
+    private float[] orientation = new float[3]; // orientation angles from accel and magnet
+    private float[] fusedOrientation = new float[3]; // final orientation angles from sensor fusion
+    private float[] rotationMatrix = new float[9]; // accelerometer and magnetometer based rotation matrix
     private float[] absoluteFrameOrientation = new float[3];
-
-    private float[] gravityVector = new float[3];
-
-    // copy the new gyro values into the gyro array
-    // convert the raw gyro data into a rotation vector
-    private float[] deltaVector = new float[4];
-
-    // convert rotation vector into rotation matrix
-    private float[] deltaMatrix = new float[9];
+    private float[] gravityOrientation = new float[3]; // gravity on x, y, z axis
+    private float[] deltaRotationVector = new float[4]; // convert the raw gyro data into a rotation vector
+    private float[] deltaMatrix = new float[9]; // convert rotation vector into rotation matrix
 
     private long timeStamp;
-
     private boolean initState = false;
 
     private MeanFilter meanFilterGravity;
@@ -106,10 +75,9 @@ public class LinearAcceleration {
 
     /**
      * Initialize a singleton instance.
-     * <p/>
-     * //@param gravitySubject   the gravity subject.
-     * //@param gyroscopeSubject the gyroscope subject.
-     * //@param magneticSubject  the magnetic subject.
+     * gravitySubject the gravity subject.
+     * gyroscopeSubject the gyroscope subject.
+     * magneticSubject the magnetic subject.
      */
     public LinearAcceleration() {
         super();
@@ -149,29 +117,45 @@ public class LinearAcceleration {
     }
 
     public void prepareToExport() {
-        this.singleData.setaX(linearAcceleration[0]);
-        this.singleData.setaY(linearAcceleration[1]);
-        this.singleData.setaZ(linearAcceleration[2]);
+        this.singleData.setAccX(linearAcceleration[0]);
+        this.singleData.setAccY(linearAcceleration[1]);
+        this.singleData.setAccZ(linearAcceleration[2]);
         exportNewSensorData(this.singleData);
     }
 
     @Subscribe
     public void onSensorUpdate(SensorSingleData singleData) {
+        startProcess(singleData);
+    }
+
+    private void startProcess(SensorSingleData singleData) {
         this.singleData = singleData;
+
+        float[] acceleration = new float[]{this.singleData.getAccX(), this.singleData.getAccY(), this.singleData
+                .getAccZ()};
+        float[] magnetic = new float[]{this.singleData.getMagnX(), this.singleData.getMagnY(), this.singleData
+                .getMagnZ()};
+        this.gyroscope = new float[]{this.singleData.getGyroX(), this.singleData.getGyroY(), this.singleData
+                .getGyroZ()};
+
+        onAccelerationSensorChanged(acceleration);
+        onMagneticSensorChanged(magnetic);
+        float dT = (this.singleData.getTimestamp() - this.timeStamp) * NS2S;
+        getRotationVectorFromGyro(dT / 2.0f);
+        this.timeStamp = this.singleData.getTimestamp();
+        getGravityVector(deltaRotationVector);
+        onGravitySensorChanged(gravity);
+        onGyroscopeSensorChanged(this.gyroscope, this.timeStamp);
     }
 
     private void exportNewSensorData(SensorSingleData newSensorData) {
         exporter.writeData(newSensorData.toString());
     }
 
-    /**
-     * Calculates orientation angles from accelerometer and magnetometer output.
-     */
+    // Calculates orientation angles from accelerometer and magnetometer output.
     private void calculateOrientation() {
-        if (getRotationMatrix(rotationMatrix, null, gravity,
-                magnetic)) {
+        if (getRotationMatrix(rotationMatrix, null, gravity, magnetic)) {
             getOrientation(rotationMatrix, orientation);
-
             hasOrientation = true;
         }
     }
@@ -182,10 +166,9 @@ public class LinearAcceleration {
      * rotation matrix, only the orientation from a rotation matrix. The basic
      * rotations can be found in Wikipedia with the caveat that the rotations
      * are *transposed* relative to what is required for this method.
-     * <p/>
-     * //@param The device orientation.
-     * //@return The rotation matrix from the orientation.
-     * //@see http://en.wikipedia.org/wiki/Rotation_matrix
+     * The device orientation.
+     * The rotation matrix from the orientation.
+     * http://en.wikipedia.org/wiki/Rotation_matrix
      */
     private float[] getRotationMatrixFromOrientation(float[] orientation) {
         float[] xM = new float[9];
@@ -232,8 +215,7 @@ public class LinearAcceleration {
         zM[7] = 0.0f;
         zM[8] = 1.0f;
 
-        // Build the composite rotation... rotation order is y, x, z (roll,
-        // pitch, azimuth)
+        // Build the composite rotation... rotation order is y, x, z (roll, pitch, azimuth)
         float[] resultMatrix = matrixMultiplication(xM, yM);
         resultMatrix = matrixMultiplication(zM, resultMatrix);
         return resultMatrix;
@@ -251,8 +233,7 @@ public class LinearAcceleration {
         float Hz = Ex * Ay - Ey * Ax;
         final float normH = (float) Math.sqrt(Hx * Hx + Hy * Hy + Hz * Hz);
         if (normH < 0.1f) {
-            // device is close to free fall (or in space?), or close to
-            // magnetic north pole. Typical values are  > 100.
+            // device is close to free fall (or in space?), or close to magnetic north pole. Typical values are  > 100.
             return false;
         }
         final float invH = 1.0f / normH;
@@ -297,9 +278,8 @@ public class LinearAcceleration {
             }
         }
         if (I != null) {
-            // compute the inclination matrix by projecting the geomagnetic
-            // vector onto the Z (gravity) and X (horizontal component
-            // of geomagnetic vector) axes.
+            // compute the inclination matrix by projecting the geomagnetic vector onto the Z (gravity) and X
+            // (horizontal component of geomagnetic vector) axes.
             final float invE = 1.0f / (float) Math.sqrt(Ex * Ex + Ey * Ey + Ez * Ez);
             final float c = (Ex * Mx + Ey * My + Ez * Mz) * invE;
             final float s = (Ex * Ax + Ey * Ay + Ez * Az) * invE;
@@ -385,12 +365,9 @@ public class LinearAcceleration {
 
     /**
      * Calculates a rotation vector from the gyroscope angular speed values.
-     * <p/>
-     * //@param gyroValues
-     * //@param deltaRotationVector
-     * //@param timeFactor
-     * //@see http://developer.android
-     * .com/reference/android/hardware/SensorEvent.html#values
+     * gyroValues
+     * deltaRotationVector
+     * timeFactor
      */
     private void getRotationVectorFromGyro(float timeFactor) {
 
@@ -413,19 +390,28 @@ public class LinearAcceleration {
         float sinThetaOverTwo = (float) Math.sin(thetaOverTwo);
         float cosThetaOverTwo = (float) Math.cos(thetaOverTwo);
 
-        deltaVector[0] = sinThetaOverTwo * gyroscope[0];
-        deltaVector[1] = sinThetaOverTwo * gyroscope[1];
-        deltaVector[2] = sinThetaOverTwo * gyroscope[2];
-        deltaVector[3] = cosThetaOverTwo;
+        deltaRotationVector[0] = sinThetaOverTwo * gyroscope[0];
+        deltaRotationVector[1] = sinThetaOverTwo * gyroscope[1];
+        deltaRotationVector[2] = sinThetaOverTwo * gyroscope[2];
+        deltaRotationVector[3] = cosThetaOverTwo;
     }
 
-    /**
-     * Multiply A by B.
-     *
-     * //@param A
-     * //@param B
-     * //@return A*B
-     */
+    private void getGravityVector(float[] deltaRotationVector) {
+        float q0 = deltaRotationVector[0];
+        float q1 = deltaRotationVector[1];
+        float q2 = deltaRotationVector[2];
+        float q3 = deltaRotationVector[3];
+
+        float gx = 2 * (q1 * q3 - q0 * q2);
+        float gy = 2 * (q0 * q1 + q2 * q3);
+        float gz = q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3;
+
+        gravity[0] = gx;
+        gravity[1] = gy;
+        gravity[2] = gz;
+    }
+
+    //  Multiply A by B
     private float[] matrixMultiplication(float[] A, float[] B) {
         float[] result = new float[9];
 
@@ -444,34 +430,27 @@ public class LinearAcceleration {
         return result;
     }
 
+    private void onAccelerationSensorChanged(float[] acceleration) {
+        // Get a local copy of the raw magnetic values from the device sensor.
+        System.arraycopy(acceleration, 0, this.acceleration, 0,
+                acceleration.length);
 
-    private void onMagneticSensorChanged(float[] magnetic, long timeStamp) {
+        this.acceleration = meanFilterAcceleration.filterFloat(this.acceleration);
+    }
+
+    private void onMagneticSensorChanged(float[] magnetic) {
         // Get a local copy of the raw magnetic values from the device sensor.
         System.arraycopy(magnetic, 0, this.magnetic, 0, magnetic.length);
 
         this.magnetic = meanFilterMagnetic.filterFloat(this.magnetic);
     }
 
-
-    private void onAccelerationSensorChanged(float[] acceleration, long timeStamp) {
-        // Get a local copy of the raw magnetic values from the device sensor.
-        System.arraycopy(acceleration, 0, this.acceleration, 0,
-                acceleration.length);
-
-        this.acceleration = meanFilterAcceleration
-                .filterFloat(this.acceleration);
-    }
-
-
-    private void onGravitySensorChanged(float[] gravity, long timeStamp) {
+    private void onGravitySensorChanged(float[] gravity) {
         // Get a local copy of the raw magnetic values from the device sensor.
         System.arraycopy(gravity, 0, this.gravity, 0, gravity.length);
-
         this.gravity = meanFilterGravity.filterFloat(this.gravity);
-
         calculateOrientation();
     }
-
 
     private void onGyroscopeSensorChanged(float[] gyroscope, long timeStamp) {
         // don't start until first accelerometer/magnetometer orientation has
@@ -497,7 +476,7 @@ public class LinearAcceleration {
         this.timeStamp = timeStamp;
 
         // Get the rotation matrix from the gyroscope
-        getRotationMatrixFromVector(deltaMatrix, deltaVector);
+        getRotationMatrixFromVector(deltaMatrix, deltaRotationVector);
 
         // Apply the new rotation interval on the gyroscope based rotation
         // matrix to form a composite rotation matrix. The product of two
@@ -516,9 +495,7 @@ public class LinearAcceleration {
         calculateFusedOrientation();
     }
 
-    /**
-     * Calculate the fused orientation.
-     */
+    // Calculate the fused orientation.
     private void calculateFusedOrientation() {
         float oneMinusCoeff = (1.0f - FILTER_COEFFICIENT);
 
@@ -585,8 +562,7 @@ public class LinearAcceleration {
                     + oneMinusCoeff * orientation[2];
         }
 
-        // overwrite gyro matrix and orientation with fused orientation
-        // to comensate gyro drift
+        // overwrite gyro matrix and orientation with fused orientation  to comensate gyro drift
         gyroMatrix = getRotationMatrixFromOrientation(fusedOrientation);
 
         System.arraycopy(fusedOrientation, 0, gyroOrientation, 0, 3);
@@ -624,22 +600,20 @@ public class LinearAcceleration {
 
     // TODO TEST IT!
     private void calculateGravity() {
-        System.arraycopy(gyroOrientation, 0, gravityVector, 0, 3);
+        System.arraycopy(gyroOrientation, 0, gravityOrientation, 0, 3);
 
         gravity[0] = (float) (Constants.GRAVITY_EARTH
-                * -Math.cos(gravityVector[1]) * Math
-                .sin(gravityVector[2]));
+                * -Math.cos(gravityOrientation[1]) * Math
+                .sin(gravityOrientation[2]));
 
-        // Find the gravity component of the Y-axis
-        // = g*-sin(pitch);
+        // Find the gravity component of the Y-axis = g*-sin(pitch);
         gravity[1] = (float) (Constants.GRAVITY_EARTH * -Math
-                .sin(gravityVector[1]));
+                .sin(gravityOrientation[1]));
 
-        // Find the gravity component of the Z-axis
-        // = g*cos(pitch)*cos(roll);
+        // Find the gravity component of the Z-axis = g*cos(pitch)*cos(roll);
         gravity[2] = (float) (Constants.GRAVITY_EARTH
-                * Math.cos(gravityVector[1]) * Math
-                .cos(gravityVector[2]));
+                * Math.cos(gravityOrientation[1]) * Math
+                .cos(gravityOrientation[2]));
     }
 
     private void calculateLinearAcceleration() {
@@ -649,26 +623,22 @@ public class LinearAcceleration {
         // values[1]: pitch, rotation around the X axis.
         // values[2]: roll, rotation around the Y axis.
 
-        // Find the gravity component of the X-axis
-        // = g*-cos(pitch)*sin(roll);
+        // Find the gravity component of the X-axis = g*-cos(pitch)*sin(roll);
         components[0] = (float) (Constants.GRAVITY_EARTH
                 * -Math.cos(absoluteFrameOrientation[1]) * Math
                 .sin(absoluteFrameOrientation[2]));
 
-        // Find the gravity component of the Y-axis
-        // = g*-sin(pitch);
+        // Find the gravity component of the Y-axis  g*-sin(pitch);
         components[1] = (float) (Constants.GRAVITY_EARTH * -Math
                 .sin(absoluteFrameOrientation[1]));
 
-        // Find the gravity component of the Z-axis
-        // = g*cos(pitch)*cos(roll);
+        // Find the gravity component of the Z-axis = g*cos(pitch)*cos(roll);
         components[2] = (float) (Constants.GRAVITY_EARTH
                 * Math.cos(absoluteFrameOrientation[1]) * Math
                 .cos(absoluteFrameOrientation[2]));
 
-        // Subtract the gravity component of the signal
-        // from the input acceleration signal to get the
-        // tilt compensated output.
+        // Subtract the gravity component of the signal from the input acceleration signal to get the tilt
+        // compensated output.
         linearAcceleration[0] = (this.acceleration[0] - components[0]);
         linearAcceleration[1] = (this.acceleration[1] - components[1]);
         linearAcceleration[2] = (this.acceleration[2] - components[2]);
