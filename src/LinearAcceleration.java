@@ -117,10 +117,10 @@ public class LinearAcceleration {
     }
 
     public void prepareToExport() {
-        this.singleData.setAccX(linearAcceleration[0]);
-        this.singleData.setAccY(linearAcceleration[1]);
-        this.singleData.setAccZ(linearAcceleration[2]);
-        exportNewSensorData(this.singleData);
+        singleData.setAccX(linearAcceleration[0]);
+        singleData.setAccY(linearAcceleration[1]);
+        singleData.setAccZ(linearAcceleration[2]);
+        exportNewSensorData(singleData);
     }
 
     @Subscribe
@@ -566,10 +566,7 @@ public class LinearAcceleration {
         gyroMatrix = getRotationMatrixFromOrientation(fusedOrientation);
 
         System.arraycopy(fusedOrientation, 0, gyroOrientation, 0, 3);
-
         calculateLinearAcceleration();
-
-        prepareToExport();
     }
 
     private static float[] getOrientation(float[] R, float values[]) {
@@ -645,6 +642,8 @@ public class LinearAcceleration {
 
         this.linearAcceleration = meanFilterLinearAcceleration
                 .filterFloat(this.linearAcceleration);
+
+        prepareToExport();
     }
 
 }
